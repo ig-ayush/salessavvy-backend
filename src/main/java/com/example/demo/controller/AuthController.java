@@ -29,40 +29,32 @@ public class AuthController {
         this.authService = authService;
     }
 
-    
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
         try {
             User user = authService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
             String token = authService.generateToken(user);
 
-            Cookie cookie = new Cookie("authToken", token);
-            cookie.setHttpOnly(true);
-            cookie.setSecure(false); // Set to true if using HTTPS
-            cookie.setPath("/");
-            cookie.setMaxAge(3600); // 1 hour
-            cookie.setDomain("localhost");
-            response.addCookie(cookie);
-           // Optional but useful
-            
-            response.addHeader("Set-Cookie",
-                    String.format("authToken=%s; HttpOnly; Path=/; Max-Age=3600; SameSite=None", token));
+            response.setHeader("Set-Cookie",
+            	    "authToken=" + token +
+            	    "; Path=/" +
+            	    "; HttpOnly" +
+            	    "; Secure" +
+            	    "; SameSite=None" +
+            	    "; Max-Age=3600");
 
-            
             Map<String, Object> responseBody = new HashMap<>();
             responseBody.put("message", "Login successful");
             responseBody.put("role", user.getRole().name());
             responseBody.put("username", user.getUsername());
 
             return ResponseEntity.ok(responseBody);
-            
-        } 
-        catch (RuntimeException e) 
-        {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
-
     
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(HttpServletRequest request,HttpServletResponse response) {
